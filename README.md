@@ -22,7 +22,7 @@ A production-ready payout management system for merchants with concurrency-safe 
 - **Django REST Framework** - API layer
 
 ### Frontend
-- **React 18** - UI framework
+- **React 19** - UI framework
 - **Vite** - Build tool
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
