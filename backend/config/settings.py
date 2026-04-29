@@ -32,7 +32,13 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://playto-console.vercel.app",
 ]
+
+# Add additional CORS origins from environment variable (comma-separated)
+additional_cors = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+if additional_cors:
+    CORS_ALLOWED_ORIGINS.extend(additional_cors.split(","))
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "accept",
