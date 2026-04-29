@@ -24,7 +24,7 @@ class Command(BaseCommand):
                         {"number": "ACC0014242", "name": "Primary Savings", "bank": "HDFC Bank", "is_default": True},
                         {"number": "ACC0028899", "name": "Business Account", "bank": "ICICI Bank", "is_default": False},
                     ],
-                    "ledger_credits": [1000000, 500000],  # 10000 INR, 5000 INR
+                    "ledger_credits": [10000000, 5000000],  # 100000 INR, 50000 INR
                 },
                 {
                     "username": "merchant2",
@@ -33,7 +33,7 @@ class Command(BaseCommand):
                     "bank_accounts": [
                         {"number": "ACC0031122", "name": "Current Account", "bank": "SBI", "is_default": True},
                     ],
-                    "ledger_credits": [20000000],  # 200000 INR
+                    "ledger_credits": [50000000],  # 500000 INR
                 },
                 {
                     "username": "merchant3",
