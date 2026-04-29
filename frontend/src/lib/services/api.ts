@@ -23,7 +23,7 @@ export async function fetchBalance(): Promise<Balance> {
       held: (data.held_balance || 0) / 100,
       totalEarnings: (data.total_earnings || 0) / 100,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[API] Balance fetch error:', error);
     throw new Error('Failed to fetch balance. Please try again.', { cause: error });
   }
@@ -34,7 +34,7 @@ export async function fetchPayouts(): Promise<Payout[]> {
     const response = await api.get('/payouts/');
     const data = response.data;
     return Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[API] Payouts fetch error:', error);
     throw new Error('Failed to fetch payouts. Please try again.', { cause: error });
   }
@@ -59,7 +59,7 @@ export async function requestPayout(
 
     const data = response.data;
     return data.data || data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[API] Payout request error:', error);
     if (axios.isAxiosError(error) && error.response) {
       const errorData = error.response.data || {};
@@ -86,7 +86,7 @@ export async function retryPayout(payoutId: string): Promise<PayoutResponse> {
 
     const data = response.data;
     return data.data || data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[API] Payout retry error:', error);
     if (axios.isAxiosError(error) && error.response) {
       const errorData = error.response.data || {};
@@ -102,7 +102,7 @@ export async function fetchTransactions(): Promise<Transaction[]> {
     const response = await api.get('/transactions/');
     const data = response.data;
     return Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[API] Transactions fetch error:', error);
     throw new Error('Failed to fetch transactions. Please try again.', { cause: error });
   }
@@ -113,7 +113,7 @@ export async function fetchBankAccounts(): Promise<BankAccount[]> {
     const response = await api.get('/bank-accounts/');
     const data = response.data;
     return Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[API] Bank accounts fetch error:', error);
     throw new Error('Failed to fetch bank accounts. Please try again.', { cause: error });
   }
