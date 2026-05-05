@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [pollInterval, setPollInterval] = useState(5000);
+  const [pollInterval, setPollInterval] = useState(10000);
 
   const loadBalance = useCallback(async () => {
     try {
@@ -123,7 +123,7 @@ export default function DashboardPage() {
           if (!stillNeedsPolling) {
             await Promise.all([loadTransactions(), loadBankAccounts()]);
           } else {
-            queueMicrotask(() => setPollInterval((prev) => Math.min(prev * 1.5, 30000)));
+            queueMicrotask(() => setPollInterval((prev) => Math.min(prev * 1.5, 60000)));
           }
         } catch (error) {
           console.error('[Dashboard] Polling error:', error);

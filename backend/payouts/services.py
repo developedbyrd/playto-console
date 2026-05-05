@@ -3,12 +3,27 @@ import time
 from django.db import transaction, IntegrityError
 from django.db.models import F, Sum, Q
 from django.utils import timezone
+from django.core.cache import cache
 
 from merchants.models import Merchant, MerchantBankAccount
 from ledger.models import LedgerEntry
 from payouts.models import Payout, IdempotencyKey, PayoutStatus, IdempotencyStatus
 
 logger = logging.getLogger(__name__)
+
+
+def invalidate_balance_cache(merchant_id: int) -> None:
+    """Invalidate the balance cache for a merchant."""
+    cache_key = f"merchant_balance:{merchant_id}"
+    cache.delete(cache_key)
+
+
+def invalidate_merchant_caches(merchant_id: int) -> None:
+    """Invalidate all merchant-related caches."""
+    cache.delete(f"merchant_balance:{merchant_id}")
+    cache.delete(f"merchant_payouts:{merchant_id}")
+    cache.delete(f"merchant_transactions:{merchant_id}")
+    cache.delete(f"merchant_bank_accounts:{merchant_id}")
 
 
 class PayoutService:
@@ -186,6 +201,8 @@ class PayoutService:
                     amount=-amount_paise,
                     reference=hold_reference,
                 )
+                # Invalidate all caches since new payout affects everything
+                invalidate_merchant_caches(merchant_locked.id)
             except IntegrityError as e:
                 payout.status = PayoutStatus.FAILED
                 payout.save()
@@ -259,6 +276,10 @@ class PayoutService:
                 payout_locked.processing_started_at = timezone.now()
                 update_fields.append("processing_started_at")
             payout_locked.save(update_fields=update_fields)
+
+            # Invalidate all caches when status affects data
+            if target_status in (PayoutStatus.COMPLETED, PayoutStatus.FAILED):
+                invalidate_merchant_caches(payout_locked.merchant_id)
 
             logger.info(
                 f"Payout state transitioned: payout_id={payout_locked.id}, "

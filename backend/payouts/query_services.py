@@ -5,4 +5,4 @@ from payouts.models import Payout
 class PayoutQueryService:
     @staticmethod
     def list_for_merchant(merchant: Merchant):
-        return Payout.objects.filter(merchant=merchant).order_by("-created_at")
+        return Payout.objects.filter(merchant=merchant).select_related('bank_account').order_by("-created_at")

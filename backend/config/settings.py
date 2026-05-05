@@ -38,7 +38,10 @@ CORS_ALLOWED_ORIGINS = [
 # Add additional CORS origins from environment variable (comma-separated)
 additional_cors = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 if additional_cors:
-    CORS_ALLOWED_ORIGINS.extend(additional_cors.split(","))
+    for origin in additional_cors.split(","):
+        origin = origin.strip().rstrip("/")
+        if origin:
+            CORS_ALLOWED_ORIGINS.append(origin)
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -111,11 +114,26 @@ def parse_database_url(url):
         "PASSWORD": parsed.password,
         "HOST": parsed.hostname,
         "PORT": parsed.port or "5432",
+        "OPTIONS": {
+            "sslmode": "require",
+            "connect_timeout": 10,
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+        },
     }
+
+# Persistent DB connections (300s/5min) - eliminates 10-30s connection overhead per request
+CONN_MAX_AGE = 300
 
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
     DATABASES = {"default": parse_database_url(database_url)}
+    DATABASES["default"]["CONN_MAX_AGE"] = CONN_MAX_AGE
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+    # Disable server-side cursors for persistent connections (psycopg issue)
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 else:
     DATABASES = {
         "default": {
@@ -125,6 +143,9 @@ else:
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "123456789"),
             "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
             "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+            "CONN_MAX_AGE": CONN_MAX_AGE,
+            "CONN_HEALTH_CHECKS": True,
+            "DISABLE_SERVER_SIDE_CURSORS": True,
         }
     }
 
@@ -144,8 +165,44 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Use Redis for caching (same as Celery broker)
+# Redis Cloud connection pooling for reduced latency
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_CACHE_URL", "redis://localhost:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 50,
+                "retry_on_timeout": True,
+                "socket_connect_timeout": 3,
+                "socket_timeout": 3,
+                "socket_keepalive": True,
+                "health_check_interval": 30,
+                "socket_keepalive_options": {
+                    1: 1,  # TCP_KEEPINTVL
+                    2: 1,  # TCP_KEEPIDLE
+                    3: 1,  # TCP_KEEPCNT
+                },
+            },
+        },
+        "KEY_PREFIX": "playto",
+        "TIMEOUT": 60,
+    }
+}
+
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+# Redis Cloud connection pooling for broker
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "max_connections": 50,
+    "retry_on_timeout": True,
+    "socket_connect_timeout": 3,
+    "socket_timeout": 3,
+    "socket_keepalive": True,
+    "health_check_interval": 30,
+}
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
